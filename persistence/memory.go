@@ -66,11 +66,22 @@ func (m *MemoryPersistence) CreateCategory(ctx context.Context, input model.NewC
 		ID:          m.IDGenerator.NewString(),
 		Name:        input.Name,
 		Description: input.Description,
-		Courses:     []*model.Course{},
 	}
 
 	m.Categories = append(m.Categories, category)
 	return category, nil
+}
+
+func (m *MemoryPersistence) GetCoursesByCategoryID(ctx context.Context, categoryID string) ([]*model.Course, error) {
+	courses := []*model.Course{}
+
+	for _, course := range courses {
+		if course.Category.ID == categoryID {
+			courses = append(courses, course)
+		}
+	}
+
+	return courses, nil
 }
 
 func (m *MemoryPersistence) CreateCourse(ctx context.Context, input model.NewCourse) (*model.Course, error) {
@@ -84,10 +95,8 @@ func (m *MemoryPersistence) CreateCourse(ctx context.Context, input model.NewCou
 		Name:        input.Name,
 		Description: input.Description,
 		Category:    category,
-		Chapters:    nil,
 	}
 
-	category.Courses = append(category.Courses, course)
 	m.Courses = append(m.Courses, course)
 	return course, nil
 }
@@ -110,7 +119,18 @@ func (m *MemoryPersistence) CreateChapter(ctx context.Context, input model.NewCh
 		Course:   course,
 	}
 
-	course.Chapters = append(course.Chapters, chapter)
 	m.Chapters = append(m.Chapters, chapter)
 	return chapter, nil
+}
+
+func (m *MemoryPersistence) GetChaptersByCourseID(ctx context.Context, courseID string) ([]*model.Chapter, error) {
+	chapters := []*model.Chapter{}
+
+	for _, chapter := range chapters {
+		if chapter.Course.ID == courseID {
+			chapters = append(chapters, chapter)
+		}
+	}
+
+	return chapters, nil
 }
