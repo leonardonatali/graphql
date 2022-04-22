@@ -43,7 +43,7 @@ type Query {
     chapters: [Chapter]
 }
 
-type Mutations {
+type Mutation {
     createCategory(input: NewCategory!): Category!
     createCourse(input: NewCourse!): Course!
     createChapter(input: NewChapter!): Chapter!

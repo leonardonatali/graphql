@@ -24,12 +24,6 @@ type Course struct {
 	Chapters    []*Chapter `json:"chapters"`
 }
 
-type Mutations struct {
-	CreateCategory *Category `json:"createCategory"`
-	CreateCourse   *Course   `json:"createCourse"`
-	CreateChapter  *Chapter  `json:"createChapter"`
-}
-
 type NewCategory struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`

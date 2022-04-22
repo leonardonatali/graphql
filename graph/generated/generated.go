@@ -34,6 +34,7 @@ type Config struct {
 }
 
 type ResolverRoot interface {
+	Mutation() MutationResolver
 	Query() QueryResolver
 }
 
@@ -63,7 +64,7 @@ type ComplexityRoot struct {
 		Name        func(childComplexity int) int
 	}
 
-	Mutations struct {
+	Mutation struct {
 		CreateCategory func(childComplexity int, input model.NewCategory) int
 		CreateChapter  func(childComplexity int, input model.NewChapter) int
 		CreateCourse   func(childComplexity int, input model.NewCourse) int
@@ -76,6 +77,11 @@ type ComplexityRoot struct {
 	}
 }
 
+type MutationResolver interface {
+	CreateCategory(ctx context.Context, input model.NewCategory) (*model.Category, error)
+	CreateCourse(ctx context.Context, input model.NewCourse) (*model.Course, error)
+	CreateChapter(ctx context.Context, input model.NewChapter) (*model.Chapter, error)
+}
 type QueryResolver interface {
 	Categories(ctx context.Context) ([]*model.Category, error)
 	Courses(ctx context.Context) ([]*model.Course, error)
@@ -188,41 +194,41 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Course.Name(childComplexity), true
 
-	case "Mutations.createCategory":
-		if e.complexity.Mutations.CreateCategory == nil {
+	case "Mutation.createCategory":
+		if e.complexity.Mutation.CreateCategory == nil {
 			break
 		}
 
-		args, err := ec.field_Mutations_createCategory_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_createCategory_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Mutations.CreateCategory(childComplexity, args["input"].(model.NewCategory)), true
+		return e.complexity.Mutation.CreateCategory(childComplexity, args["input"].(model.NewCategory)), true
 
-	case "Mutations.createChapter":
-		if e.complexity.Mutations.CreateChapter == nil {
+	case "Mutation.createChapter":
+		if e.complexity.Mutation.CreateChapter == nil {
 			break
 		}
 
-		args, err := ec.field_Mutations_createChapter_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_createChapter_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Mutations.CreateChapter(childComplexity, args["input"].(model.NewChapter)), true
+		return e.complexity.Mutation.CreateChapter(childComplexity, args["input"].(model.NewChapter)), true
 
-	case "Mutations.createCourse":
-		if e.complexity.Mutations.CreateCourse == nil {
+	case "Mutation.createCourse":
+		if e.complexity.Mutation.CreateCourse == nil {
 			break
 		}
 
-		args, err := ec.field_Mutations_createCourse_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_createCourse_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Mutations.CreateCourse(childComplexity, args["input"].(model.NewCourse)), true
+		return e.complexity.Mutation.CreateCourse(childComplexity, args["input"].(model.NewCourse)), true
 
 	case "Query.categories":
 		if e.complexity.Query.Categories == nil {
@@ -262,6 +268,20 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 			}
 			first = false
 			data := ec._Query(ctx, rc.Operation.SelectionSet)
+			var buf bytes.Buffer
+			data.MarshalGQL(&buf)
+
+			return &graphql.Response{
+				Data: buf.Bytes(),
+			}
+		}
+	case ast.Mutation:
+		return func(ctx context.Context) *graphql.Response {
+			if !first {
+				return nil
+			}
+			first = false
+			data := ec._Mutation(ctx, rc.Operation.SelectionSet)
 			var buf bytes.Buffer
 			data.MarshalGQL(&buf)
 
@@ -340,7 +360,7 @@ type Query {
     chapters: [Chapter]
 }
 
-type Mutations {
+type Mutation {
     createCategory(input: NewCategory!): Category!
     createCourse(input: NewCourse!): Course!
     createChapter(input: NewChapter!): Chapter!
@@ -352,7 +372,7 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
 // region    ***************************** args.gotpl *****************************
 
-func (ec *executionContext) field_Mutations_createCategory_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Mutation_createCategory_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 model.NewCategory
@@ -367,7 +387,7 @@ func (ec *executionContext) field_Mutations_createCategory_args(ctx context.Cont
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutations_createChapter_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Mutation_createChapter_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 model.NewChapter
@@ -382,7 +402,7 @@ func (ec *executionContext) field_Mutations_createChapter_args(ctx context.Conte
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutations_createCourse_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Mutation_createCourse_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 model.NewCourse
@@ -902,7 +922,7 @@ func (ec *executionContext) _Course_chapters(ctx context.Context, field graphql.
 	return ec.marshalOChapter2ᚕᚖgithubᚗcomᚋleonardonataliᚋgraphqlᚋgraphᚋmodelᚐChapterᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Mutations_createCategory(ctx context.Context, field graphql.CollectedField, obj *model.Mutations) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_createCategory(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -910,16 +930,16 @@ func (ec *executionContext) _Mutations_createCategory(ctx context.Context, field
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:     "Mutations",
+		Object:     "Mutation",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutations_createCategory_args(ctx, rawArgs)
+	args, err := ec.field_Mutation_createCategory_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
@@ -927,7 +947,7 @@ func (ec *executionContext) _Mutations_createCategory(ctx context.Context, field
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.CreateCategory, nil
+		return ec.resolvers.Mutation().CreateCategory(rctx, args["input"].(model.NewCategory))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -944,7 +964,7 @@ func (ec *executionContext) _Mutations_createCategory(ctx context.Context, field
 	return ec.marshalNCategory2ᚖgithubᚗcomᚋleonardonataliᚋgraphqlᚋgraphᚋmodelᚐCategory(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Mutations_createCourse(ctx context.Context, field graphql.CollectedField, obj *model.Mutations) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_createCourse(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -952,16 +972,16 @@ func (ec *executionContext) _Mutations_createCourse(ctx context.Context, field g
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:     "Mutations",
+		Object:     "Mutation",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutations_createCourse_args(ctx, rawArgs)
+	args, err := ec.field_Mutation_createCourse_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
@@ -969,7 +989,7 @@ func (ec *executionContext) _Mutations_createCourse(ctx context.Context, field g
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.CreateCourse, nil
+		return ec.resolvers.Mutation().CreateCourse(rctx, args["input"].(model.NewCourse))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -986,7 +1006,7 @@ func (ec *executionContext) _Mutations_createCourse(ctx context.Context, field g
 	return ec.marshalNCourse2ᚖgithubᚗcomᚋleonardonataliᚋgraphqlᚋgraphᚋmodelᚐCourse(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Mutations_createChapter(ctx context.Context, field graphql.CollectedField, obj *model.Mutations) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_createChapter(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -994,16 +1014,16 @@ func (ec *executionContext) _Mutations_createChapter(ctx context.Context, field 
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:     "Mutations",
+		Object:     "Mutation",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutations_createChapter_args(ctx, rawArgs)
+	args, err := ec.field_Mutation_createChapter_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
@@ -1011,7 +1031,7 @@ func (ec *executionContext) _Mutations_createChapter(ctx context.Context, field 
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.CreateChapter, nil
+		return ec.resolvers.Mutation().CreateChapter(rctx, args["input"].(model.NewChapter))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2688,42 +2708,51 @@ func (ec *executionContext) _Course(ctx context.Context, sel ast.SelectionSet, o
 	return out
 }
 
-var mutationsImplementors = []string{"Mutations"}
+var mutationImplementors = []string{"Mutation"}
 
-func (ec *executionContext) _Mutations(ctx context.Context, sel ast.SelectionSet, obj *model.Mutations) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, mutationsImplementors)
+func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, mutationImplementors)
+	ctx = graphql.WithFieldContext(ctx, &graphql.FieldContext{
+		Object: "Mutation",
+	})
+
 	out := graphql.NewFieldSet(fields)
 	var invalids uint32
 	for i, field := range fields {
+		innerCtx := graphql.WithRootFieldContext(ctx, &graphql.RootFieldContext{
+			Object: field.Name,
+			Field:  field,
+		})
+
 		switch field.Name {
 		case "__typename":
-			out.Values[i] = graphql.MarshalString("Mutations")
+			out.Values[i] = graphql.MarshalString("Mutation")
 		case "createCategory":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutations_createCategory(ctx, field, obj)
+				return ec._Mutation_createCategory(ctx, field)
 			}
 
-			out.Values[i] = innerFunc(ctx)
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
 
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
 		case "createCourse":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutations_createCourse(ctx, field, obj)
+				return ec._Mutation_createCourse(ctx, field)
 			}
 
-			out.Values[i] = innerFunc(ctx)
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
 
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
 		case "createChapter":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutations_createChapter(ctx, field, obj)
+				return ec._Mutation_createChapter(ctx, field)
 			}
 
-			out.Values[i] = innerFunc(ctx)
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
 
 			if out.Values[i] == graphql.Null {
 				invalids++
@@ -3281,6 +3310,10 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) marshalNCategory2githubᚗcomᚋleonardonataliᚋgraphqlᚋgraphᚋmodelᚐCategory(ctx context.Context, sel ast.SelectionSet, v model.Category) graphql.Marshaler {
+	return ec._Category(ctx, sel, &v)
+}
+
 func (ec *executionContext) marshalNCategory2ᚖgithubᚗcomᚋleonardonataliᚋgraphqlᚋgraphᚋmodelᚐCategory(ctx context.Context, sel ast.SelectionSet, v *model.Category) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -3291,6 +3324,10 @@ func (ec *executionContext) marshalNCategory2ᚖgithubᚗcomᚋleonardonataliᚋ
 	return ec._Category(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNChapter2githubᚗcomᚋleonardonataliᚋgraphqlᚋgraphᚋmodelᚐChapter(ctx context.Context, sel ast.SelectionSet, v model.Chapter) graphql.Marshaler {
+	return ec._Chapter(ctx, sel, &v)
+}
+
 func (ec *executionContext) marshalNChapter2ᚖgithubᚗcomᚋleonardonataliᚋgraphqlᚋgraphᚋmodelᚐChapter(ctx context.Context, sel ast.SelectionSet, v *model.Chapter) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -3299,6 +3336,10 @@ func (ec *executionContext) marshalNChapter2ᚖgithubᚗcomᚋleonardonataliᚋg
 		return graphql.Null
 	}
 	return ec._Chapter(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNCourse2githubᚗcomᚋleonardonataliᚋgraphqlᚋgraphᚋmodelᚐCourse(ctx context.Context, sel ast.SelectionSet, v model.Course) graphql.Marshaler {
+	return ec._Course(ctx, sel, &v)
 }
 
 func (ec *executionContext) marshalNCourse2ᚕᚖgithubᚗcomᚋleonardonataliᚋgraphqlᚋgraphᚋmodelᚐCourseᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Course) graphql.Marshaler {
