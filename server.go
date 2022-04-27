@@ -21,8 +21,6 @@ func main() {
 		port = defaultPort
 	}
 
-	logger := logrus.New()
-
 	mdb := persistence.NewMemoryPersistence(generators.NewUUIDGenenerator())
 
 	resolver := graph.NewResolver(mdb, mdb, mdb)
@@ -32,6 +30,7 @@ func main() {
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	http.Handle("/query", srv)
 
+	logger := logrus.New()
 	logger.Infof("connect to http://localhost:%s/ for GraphQL playground", port)
 	logger.Fatal(http.ListenAndServe(":"+port, nil))
 }
